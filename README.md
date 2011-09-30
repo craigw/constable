@@ -13,7 +13,7 @@ Installing
 
 The server needs ImageMagick installed. Mostly I do this using `apt-get`:
 
-    apt-get isntall imagemagick
+    apt-get install imagemagick
 
 You'll need a broker that talks Stomp somewhere on your network. I use Apache
 Apollo, and I'm not totally sure if the code uses anything that's specific to
@@ -24,14 +24,14 @@ bring this closer to reality please send them to me!
 Usage
 -----
 
-ImageMagick provides a huge nubmer of commands and options. Supporting them
+ImageMagick provides a huge number of commands and options. Supporting them
 all is a big task, so I'm implementing just the few that I use. If you need
 something else supported, please do fork and patch the project. Let me know
 and I'll pull your changes.
 
 Run the server, somewhere that has ImageMagick installed:
 
-    constabled --broker stomp://mq.yourdomain.com:61613
+    constabled stomp://mq.yourdomain.com:61613
 
 Use the services on the command line. You don't need ot have ImageMagick
 installed on your client machines, just constable.
@@ -49,7 +49,7 @@ Constable (and I have no plans to handle it).
 A brief example of what interacting with Constable looks like, here
 identifying some image file I had lying around on disk:
 
-    $ cat input_file | constable-identify --broker stomp://mq.yourdomain.com:61613
+    $ cat input_file | constable-identify stomp://mq.yourdomain.com:61613
     constabled-164829495-102948483-1939485.jpg JPEG 640x480 DirectClass 87kb 0.050u 0:01
 
 I explicitly state the broker in the above commands but if you leave out that
