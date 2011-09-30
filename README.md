@@ -31,7 +31,7 @@ and I'll pull your changes.
 
 Run the server, somewhere that has ImageMagick installed:
 
-    constabled stomp://mq.yourdomain.com:61613
+    constabled --broker=stomp://mq.yourdomain.com:61613
 
 Use the services on the command line. You don't need ot have ImageMagick
 installed on your client machines, just constable.
@@ -49,7 +49,7 @@ Constable (and I have no plans to handle it).
 A brief example of what interacting with Constable looks like, here
 identifying some image file I had lying around on disk:
 
-    $ cat input_file | constable-identify stomp://mq.yourdomain.com:61613
+    $ cat input_file | constable-identify --broker=stomp://mq.yourdomain.com:61613
     constabled-164829495-102948483-1939485.jpg JPEG 640x480 DirectClass 87kb 0.050u 0:01
 
 I explicitly state the broker in the above commands but if you leave out that

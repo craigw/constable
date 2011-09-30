@@ -6,6 +6,7 @@ require 'json'
 require 'tempfile'
 require 'open3'
 require 'base64'
+require 'getoptlong'
 
 class Job
   module WorkingEnvironment
@@ -31,14 +32,15 @@ class Job
       end
     end
 
-    def run_command command
-      puts "Running #{command}"
-      stdin, stdout, stderr, command = Open3.popen3 command
+    def run_command command_line
+      puts "Running #{command_line}"
+      stdin, stdout, stderr, command = Open3.popen3 command_line
       {
         stdout: stdout.readlines.join,
         stderr: stderr.readlines.join,
         exit_code: command.value.exitstatus,
-        pid: command.value.pid
+        pid: command.value.pid,
+        command_line: command_line
       }
     end
   end
@@ -55,8 +57,12 @@ class Job
 
     def execute
       using_file_with_content options['input'] do |file|
-        run_command "identify #{file.path}"
+        run_command "identify #{parameters} #{file.path}"
       end
+    end
+
+    def parameters
+      '-verbose' if options['parameters'] == '-verbose'
     end
   end
 
@@ -91,7 +97,16 @@ class Job
   end
 end
 
-client = Stomp::Client.new ARGV[0]
+options = {}
+argv = GetoptLong.new(
+  [ "--broker", "-b", GetoptLong::OPTIONAL_ARGUMENT ]
+)
+argv.each do |option, value|
+  options['broker'] = value if option == '--broker'
+end
+options['broker'] ||= 'stomp://127.0.0.1:61613'
+
+client = Stomp::Client.new options['broker']
 client.subscribe '/queue/constable' do |message|
   puts "Received #{message.headers['message-id']}"
 

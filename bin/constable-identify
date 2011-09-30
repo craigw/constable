@@ -11,9 +11,19 @@ encoded_input = Base64.encode64 image
 
 require 'stomp'
 require 'json'
+require "getoptlong"
+
+options = {}
+argv = GetoptLong.new(
+  [ "--broker", "-b", GetoptLong::OPTIONAL_ARGUMENT ]
+)
+argv.each do |option, value|
+  options['broker'] = value if option == '--broker'
+end
+options['broker'] ||= 'stomp://127.0.0.1:61613'
 
 results = '/queue/constable.results-' + Process.pid.to_s + '-' + Time.now.to_i.to_s
-client = Stomp::Client.new ARGV[0]
+client = Stomp::Client.new options['broker']
 client.subscribe results, 'auto-delete' => true do |message|
   results = JSON.parse message.body
   if results['exit_code'] == 0
@@ -24,9 +34,11 @@ client.subscribe results, 'auto-delete' => true do |message|
   client.close
 end
 
+parameters = ARGV.join ' '
 command = {
   command: 'identify',
-  input: encoded_input
+  input: encoded_input,
+  parameters: parameters
 }
 command_json = JSON.generate command
 
