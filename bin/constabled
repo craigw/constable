@@ -1,0 +1,107 @@
+#! /usr/bin/env ruby
+
+require 'stomp'
+require 'digest/sha1'
+require 'json'
+require 'tempfile'
+require 'open3'
+require 'base64'
+
+class Job
+  module WorkingEnvironment
+    def with_temp_file
+      temp_file = Tempfile.new serial
+      yield temp_file
+    ensure
+      temp_file.close!
+    end
+
+    def serial
+      @job_id ||= [
+        File.basename($0), Time.now.to_i, rand(1_000_000)
+      ].join '-'
+    end
+
+    def using_file_with_content encoded_content, &block
+      decoded_content = Base64.decode64 encoded_content
+      with_temp_file do |file|
+        file.print decoded_content
+        file.flush
+        yield file
+      end
+    end
+
+    def run_command command
+      puts "Running #{command}"
+      stdin, stdout, stderr, command = Open3.popen3 command
+      {
+        stdout: stdout.readlines.join,
+        stderr: stderr.readlines.join,
+        exit_code: command.value.exitstatus,
+        pid: command.value.pid
+      }
+    end
+  end
+
+  class IdentifyCommand
+    include WorkingEnvironment
+
+    attr_accessor :options
+    private :options, :options=
+
+    def initialize options
+      self.options = options
+    end
+
+    def execute
+      using_file_with_content options['input'] do |file|
+        run_command "identify #{file.path}"
+      end
+    end
+  end
+
+  attr_accessor :options
+  private :options, :options=
+
+  def initialize options
+    self.options = options
+  end
+
+  def execute
+    handler.execute
+  end
+
+  def handler
+    handler_class.new options
+  end
+
+  def handler_class
+    Job.const_get handler_name
+  end
+
+  def handler_name
+    name = command_name
+    name.gsub!(/\/(.?)/) { "::#{$1.upcase}" }
+    name.gsub!(/(?:^|_)(.)/) { $1.upcase }
+    name + 'Command'
+  end
+
+  def command_name
+    options["command"]
+  end
+end
+
+client = Stomp::Client.new ARGV[0]
+client.subscribe '/queue/constable' do |message|
+  puts "Received #{message.headers['message-id']}"
+
+  options = JSON.parse message.body
+  results = Job.new(options).execute
+
+  result_json = JSON.generate results
+  destination = message.headers['reply-to']
+  client.publish destination, result_json
+end
+
+puts "Waiting for clients..."
+client.join

@@ -1,0 +1,34 @@
+#! /usr/bin/env ruby
+
+image = STDIN.read
+if image.to_s == ''
+  puts "Give me some input!"
+  exit 1
+end
+
+require 'base64'
+encoded_input = Base64.encode64 image
+
+require 'stomp'
+require 'json'
+
+results = '/queue/constable.results-' + Process.pid.to_s + '-' + Time.now.to_i.to_s
+client = Stomp::Client.new ARGV[0]
+client.subscribe results, 'auto-delete' => true do |message|
+  results = JSON.parse message.body
+  if results['exit_code'] == 0
+    print results['stdout']
+  else
+    print results['stderr']
+  end
+  client.close
+end
+
+command = {
+  command: 'identify',
+  input: encoded_input
+}
+command_json = JSON.generate command
+
+client.publish '/queue/constable', command_json, 'reply-to' => results
+client.join
