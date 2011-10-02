@@ -8,6 +8,33 @@ anything quite as powerful will be generated using the service, but if you do
 make something nice please let me know!
 
 
+Up and running fast
+-------------------
+
+I've provided a Vagrant setup that will get you up and running fast. Install
+the necessary gems using bundler:
+
+    cd /path/to/checkout/of/constable
+    bundle
+
+Ask Vagrant to bring up the server components for you:
+
+    cd /path/to/checkout/of/constable
+    bundle exec vagrant up
+
+Ask Constable to do some work:
+
+    cd /path/to/checkout/of/constable
+    cat /path/to/input.png | ./bin/constable-identify
+
+That's it, you just used ImageMagick as a service.
+
+Of course, if you want to use it as a real service on your network you'll
+probably want to set it up a little differently. See the following sections on
+Installing and Usage for information on how to setup your own ImageMagick
+service.
+
+
 Installing
 ----------
 
