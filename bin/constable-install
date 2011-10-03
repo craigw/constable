@@ -1,0 +1,17 @@
+#! /usr/bin/env ruby
+
+prefix = '/usr/bin'
+argv = ARGV.join ' '
+argv += ' -- '
+%w(
+  identify
+  convert
+).each do |wrapper|
+  wrapper_path = File.join prefix, wrapper
+  puts "Installing #{wrapper_path} -> constable-#{wrapper} #{argv}"
+  File.open wrapper_path, 'w+' do |f|
+    f.puts "#!/usr/bin/env bash"
+    f.puts "constable-#{wrapper} #{argv} -- $@"
+    f.chmod 0755
+  end
+end
