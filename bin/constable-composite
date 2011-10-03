@@ -1,0 +1,47 @@
+#! /usr/bin/env ruby
+
+require 'base64'
+require 'stomp'
+require 'json'
+require "getoptlong"
+
+options = {}
+argv = GetoptLong.new(
+  [ "--broker", "-b", GetoptLong::OPTIONAL_ARGUMENT ]
+)
+argv.each do |option, value|
+  options['broker'] = value if option == '--broker'
+end
+options['broker'] ||= 'stomp://127.0.0.1:61613'
+
+parameters = ARGV.join ' '
+command = {
+  command: File.basename($0).gsub(/^constable-/, ''),
+  parameters: parameters,
+  files: {}
+}
+ARGV.each do |file_name|
+  if File.exists? file_name
+    file = File.read file_name
+    data = Base64.encode64 file
+    command[:files][file_name] = data
+  end
+end
+
+command_json = JSON.generate command
+
+results = '/queue/constable.results-' + Process.pid.to_s + '-' + Time.now.to_i.to_s
+client = Stomp::Client.new options['broker']
+client.publish '/queue/constable', command_json, 'reply-to' => results
+
+client.subscribe results, 'auto-delete' => true do |message|
+  results = JSON.parse message.body
+  if results['exit_code'] == 0
+    print results['stdout']
+  else
+    print results['stderr']
+  end
+  client.close
+end
+
+client.join

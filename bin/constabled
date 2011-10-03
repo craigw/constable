@@ -120,6 +120,36 @@ class Job
     end
   end
 
+  class CompareCommand
+    include WorkingEnvironment
+
+    attr_accessor :options
+    private :options, :options=
+
+    def initialize options
+      self.options = options
+    end
+
+    def execute
+      run_command :compare
+    end
+  end
+
+  class CompositeCommand
+    include WorkingEnvironment
+
+    attr_accessor :options
+    private :options, :options=
+
+    def initialize options
+      self.options = options
+    end
+
+    def execute
+      run_command :composite
+    end
+  end
+
   class ConvertCommand
     include WorkingEnvironment
 
