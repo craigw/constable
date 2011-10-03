@@ -25,7 +25,7 @@ Ask Vagrant to bring up the server components for you:
 Ask Constable to do some work:
 
     cd /path/to/checkout/of/constable
-    cat /path/to/input.png | ./bin/constable-identify
+    bundle exec ./bin/constable-identify -- /path/to/input.png -verbose
 
 That's it, you just used ImageMagick as a service.
 
@@ -58,9 +58,9 @@ and I'll pull your changes.
 
 Run the server, somewhere that has ImageMagick installed:
 
-    constabled --broker=stomp://mq.yourdomain.com:61613
+    $ constabled --broker=stomp://mq.yourdomain.com:61613
 
-Use the services on the command line. You don't need ot have ImageMagick
+Use the services on the command line. You don't need to have ImageMagick
 installed on your client machines, just constable.
 
 Command names are based on ImageMagick command names, prefixed with
@@ -68,16 +68,20 @@ Command names are based on ImageMagick command names, prefixed with
 and will give you a decent explanation of what they do and their options if
 you ask for it.
 
-The commands are designed to take their input on standard input and return
-results on standard output. It's up to you what you do with the input and
-output; write it to a file, pipe it to another process, that's not handled by
-Constable (and I have no plans to handle it).
+The commands are designed to take their input just like ImageMagick and return
+results on standard output. It's up to you what you do with the output;
+write it to a file, pipe it to another process, that's not handled by Constable.
+A caveat of this is that you must construct your Constable invocations such that
+ImageMagick would write to standard output rather than a file.
 
 A brief example of what interacting with Constable looks like, here
 identifying some image file I had lying around on disk:
 
-    $ cat input_file | constable-identify --broker=stomp://mq.yourdomain.com:61613
-    constabled-164829495-102948483-1939485.jpg JPEG 640x480 DirectClass 87kb 0.050u 0:01
+    $ constable-identify --broker=stomp://mq.yourdomain.com:61613 -- input_file
+    input_file JPEG 640x480 DirectClass 87kb 0.050u 0:01
+
+    $ constable-convert --broker=stomp://mq.yourdomain.com:61613 -- \
+      -resize 50% input.png jpg:- > output.jpg
 
 I explicitly state the broker in the above commands but if you leave out that
 option it'll default to stomp://localhost:61613 ie it expects a broker running

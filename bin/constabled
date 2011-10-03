@@ -10,38 +10,98 @@ require 'getoptlong'
 
 class Job
   module WorkingEnvironment
-    def with_temp_file
-      temp_file = Tempfile.new serial
-      yield temp_file
-    ensure
-      temp_file.close!
-    end
-
     def serial
       @job_id ||= [
         File.basename($0), Time.now.to_i, rand(1_000_000)
       ].join '-'
     end
 
-    def using_file_with_content encoded_content, &block
-      decoded_content = Base64.decode64 encoded_content
-      with_temp_file do |file|
-        file.print decoded_content
-        file.flush
-        yield file
+    def working_directory
+      @working_directory ||= %x[mktemp -d -t #{serial}-XXXXXX].strip
+    end
+
+    def clean_up
+      %x[ test -d "#{@working_directory}" && rm -rf "#{@working_directory}"]
+    end
+
+    def write_files
+      files.each_pair do |file_name, content|
+        puts "Decoding #{file_name}"
+        decoded_content = Base64.decode64 content
+        puts "Writing #{file_name} content"
+        file = write_file decoded_content, file_name.split(/\./)[-1]
+        puts "Wrote #{file_name} to #{file.path}"
+        rewrite_file_parameter file_name, file.path
       end
     end
 
-    def run_command command_line
+    def write_file content, ext = nil
+      hash = Digest::SHA1.hexdigest content
+      ext = ".#{ext}" if ext && ext[0] != '.'
+      file = File.open File.join(working_directory, "#{hash}#{ext}"), 'w+'
+      file.print content
+      file.close
+      file
+    end
+
+    # FIXME: We can still end up with parameters we don't know about being sent
+    # here, including shell escaped... insane.
+    #
+    # Figure out some way to generate a whitelist of ImageMagick commands and
+    # parameters.
+
+    def rewrite_file_parameter file_name, actual_file
+      file_map[actual_file] = file_name
+      puts "Rewriting parameter #{file_name} to #{actual_file}"
+      parameters.gsub! file_name, actual_file
+    end
+
+    def file_map
+      @file_map ||= {}
+    end
+
+    def unwrap_file_parameters result
+      file_map.each_pair do |local_file, remote_file|
+        puts "Rewriting parameter #{local_file} to #{remote_file}"
+        result.gsub! local_file, remote_file
+      end
+    end
+
+    def files
+      options['files']
+    end
+
+    def parameters
+      options['parameters']
+    end
+
+    def hostname
+      %x[hostname].strip
+    end
+
+    def run_command command
+      write_files
+      command_line = [ command, parameters ].join ' '
       puts "Running #{command_line}"
-      stdin, stdout, stderr, command = Open3.popen3 command_line
+      stdin, stdout, stderr = Open3.popen3 command_line
+      output = stdout.readlines.join
+      errors = stderr.readlines.join
+      unwrap_file_parameters command_line
+      unwrap_file_parameters output
       {
-        stdout: stdout.readlines.join,
-        stderr: stderr.readlines.join,
-        exit_code: command.value.exitstatus,
-        pid: command.value.pid,
-        command_line: command_line
+        :stdout => output,
+        :stderr => errors,
+        :command_line => command_line,
+        :exit_code => $?.exitstatus,
+        :pid => $?.pid,
+        :working_directory => working_directory,
+        :processor => {
+          :hostname => hostname,
+          :pid => Process.pid
+        }
       }
+    ensure
+      clean_up
     end
   end
 
@@ -56,13 +116,22 @@ class Job
     end
 
     def execute
-      using_file_with_content options['input'] do |file|
-        run_command "identify #{parameters} #{file.path}"
-      end
+      run_command :identify
+    end
+  end
+
+  class ConvertCommand
+    include WorkingEnvironment
+
+    attr_accessor :options
+    private :options, :options=
+
+    def initialize options
+      self.options = options
     end
 
-    def parameters
-      '-verbose' if options['parameters'] == '-verbose'
+    def execute
+      run_command :convert
     end
   end
 
