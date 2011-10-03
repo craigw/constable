@@ -13,9 +13,8 @@ Gem::Specification.new do |s|
   s.summary     = "ImageMagick as a service"
   s.description = "Installing ImageMagick and RMagick everywhere sucks, right? So install it in one place and have everything else use that one install."
 
-  s.files        = Dir.glob("{lib,bin}/**/*") + %w(README.md)
-  s.executables << 'constabled'
-  s.executables << 'constable-identify'
+  s.files       = Dir.glob("{lib,bin}/**/*") + %w(README.md)
+  s.executables = Dir.glob "bin/**/*"
 
   s.add_dependency 'stomp'
   s.requirements << 'A broker capable of talking Stomp'
