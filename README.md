@@ -14,18 +14,18 @@ Up and running fast
 I've provided a Vagrant setup that will get you up and running fast. Install
 the necessary gems using bundler:
 
-    cd /path/to/checkout/of/constable
-    bundle
+    $ cd /path/to/checkout/of/constable
+    $ bundle
 
 Ask Vagrant to bring up the server components for you:
 
-    cd /path/to/checkout/of/constable
-    bundle exec vagrant up
+    $ cd /path/to/checkout/of/constable
+    $ bundle exec vagrant up
 
 Ask Constable to do some work:
 
-    cd /path/to/checkout/of/constable
-    bundle exec ./bin/constable-identify -- /path/to/input.png -verbose
+    $ cd /path/to/checkout/of/constable
+    $ bundle exec ./bin/constable-identify -- /path/to/input.png -verbose
 
 That's it, you just used ImageMagick as a service.
 
@@ -40,7 +40,7 @@ Installing
 
 The server needs ImageMagick installed. Mostly I do this using `apt-get`:
 
-    apt-get install imagemagick
+    $ apt-get install imagemagick
 
 You'll need a broker that talks Stomp somewhere on your network. I use Apache
 Apollo, and I'm not totally sure if the code uses anything that's specific to
