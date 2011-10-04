@@ -6,6 +6,8 @@ argv += ' -- '
 %w(
   identify
   convert
+  composite
+  convert
 ).each do |wrapper|
   wrapper_path = File.join prefix, wrapper
   puts "Installing #{wrapper_path} -> constable-#{wrapper} #{argv}"
